@@ -1,5 +1,6 @@
 import http from 'http';
 import { ApiController, type Middleware, type RequestHandler } from './ApiController.ts';
+import { logger } from './Logger.ts';
 
 type RouteHandler = {
   handler: RequestHandler<any>;
@@ -12,8 +13,17 @@ type RouteHandler = {
 
 class RouterRegistry {
   routes: Record<string, any> = {};
+  controllers = new Map<string, ApiController>();
 
   registerController(controller: ApiController) {
+
+    if (this.controllers.has(controller.basePath)) {
+      // logger.warn(`Controller with basePath ${controller.basePath} already exists`);
+      throw new Error(`Controller with basePath ${controller.basePath} already exists found in ${controller.constructor.name}`);
+    }
+
+    this.controllers.set(controller.basePath, controller);
+
     for (const route of controller.routes) {
       const method = route.method.toUpperCase();
       const url = `${controller.basePath}${route.path}`;

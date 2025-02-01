@@ -70,17 +70,42 @@ export function Redirect<T>(url: string): ActionResult<T> {
   };
 }
 
-export type Middleware<T> = (options: FromClient<any, any, any>) => ActionResult<T> | Promise<ActionResult<T>> | void;
+export type UserInfo = {
+  id: string;
+  email: string;
+  picture: string;
+  name: string;
+};
 
-export type RequestHandler<T> = (
-  options: FromClient<any, any, any>
+export type Identity = {
+  id: string;
+  permissions: string[];
+};
+
+export interface BaseContext {
+  req: http.IncomingMessage;
+  query: { [x: string]: string };
+  params: { [x: string]: string };
+  body: any;
+}
+
+export type Middleware<T, C extends BaseContext = BaseContext> = (
+  options: C
+) => ActionResult<T> | Promise<ActionResult<T>> | void;
+
+export type RequestHandler<T, C extends BaseContext = BaseContext> = (
+  options: C
 ) => ActionResult<T> | Promise<ActionResult<T>>;
 
-export type FromClient<query = {}, params = {}, body = {}> = {
-  req: http.IncomingMessage;
-  query: { [x: string]: string } | query;
-  params: { [x: string]: string } | params;
-  body: any | body;
+export type FromClient<query = {}, params = {}, body = {}> = BaseContext & {
+  query: query;
+  params: params;
+  body: body;
+}
+
+export type AuthorizedRequest<query = {}, params = {}, body = {}> = FromClient<query, params, body> & {
+  userInfo: UserInfo;
+  identity: Identity;
 };
 
 export type FromBody<T> = {
@@ -100,6 +125,9 @@ export class ApiController {
   middleware: Middleware<any>[] = [];
 
   constructor(basePath: string, middleware: Middleware<any>[] = []) {
+    if (!basePath) {
+      throw new Error('Base path is required');
+    }
     basePath = basePath.trim();
     if (!basePath.startsWith('/')) {
       basePath = '/' + basePath;
@@ -111,8 +139,8 @@ export class ApiController {
   protected registerRoute(
     method: string,
     path: string,
-    handler: RequestHandler<any>,
-    middleware: Middleware<any>[] = [],
+    handler: RequestHandler<any, any>,
+    middleware: Middleware<any, any>[] = [],
     description?: string
   ) {
     const cleanedPath = path.startsWith('/') ? path : '/' + path;
@@ -158,31 +186,42 @@ export class ApiController {
         return InternalServerError(error.message);
       }
     }
-
   }
 
-  get(path: string, handler: RequestHandler<any>, middleware: Middleware<any>[] = [], description?: string) {
+  get<C extends BaseContext>(path: string, handler: RequestHandler<any, C>, middleware: Middleware<any, C>[] = [], description?: string) {
     this.registerRoute('GET', path, handler, middleware, description);
     return this
   }
 
-  post(path: string, handler: RequestHandler<any>, middleware: Middleware<any>[] = [], description?: string) {
+  post<C extends BaseContext>(path: string, handler: RequestHandler<any, C>, middleware: Middleware<any, C>[] = [], description?: string) {
     this.registerRoute('POST', path, handler, middleware, description);
     return this
   }
 
-  put(path: string, handler: RequestHandler<any>, middleware: Middleware<any>[] = [], description?: string) {
+  put<C extends BaseContext>(path: string, handler: RequestHandler<any, C>, middleware: Middleware<any, C>[] = [], description?: string) {
     this.registerRoute('PUT', path, handler, middleware, description);
     this
   }
 
-  delete(path: string, handler: RequestHandler<any>, middleware: Middleware<any>[] = [], description?: string) {
+  delete<C extends BaseContext>(path: string, handler: RequestHandler<any, C>, middleware: Middleware<any, C>[] = [], description?: string) {
     this.registerRoute('DELETE', path, handler, middleware, description);
     this
   }
 
-  patch(path: string, handler: RequestHandler<any>, middleware: Middleware<any>[] = [], description?: string) {
+  patch<C extends BaseContext>(path: string, handler: RequestHandler<any, C>, middleware: Middleware<any, C>[] = [], description?: string) {
     this.registerRoute('PATCH', path, handler, middleware, description);
   }
+
+
+  Ok = Ok;
+  NotFound = NotFound;
+  InternalServerError = InternalServerError;
+  Created = Created;
+  BadRequest = BadRequest;
+  Unauthorized = Unauthorized;
+  Forbidden = Forbidden;
+  NoContent = NoContent;
+  Redirect = Redirect;
+
 }
 

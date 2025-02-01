@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "node --env-file=.env --experimental-strip-types --experimental-transform-types --watch index.ts",
+    "start": "node --env-file=.env --experimental-strip-types --experimental-transform-types --no-warnings --watch index.ts",
     "test": "node --experimental-strip-types --watch --test",
     "coverage": "node --experimental-strip-types --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=lcov.info"
   },
@@ -13,5 +13,8 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^22.9.0"
+  },
+  "dependencies": {
+    "mongoose": "^8.9.6"
   }
 }

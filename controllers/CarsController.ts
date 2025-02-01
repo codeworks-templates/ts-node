@@ -1,5 +1,6 @@
 import { isAuthorized } from '../middleware/IsAuthorized.ts';
 import { requestLogger } from '../middleware/RequestLogger.ts';
+import { carsService } from '../services/CarsService.ts';
 import { ApiController, Created, Forbidden, NotFound, Ok } from '../utils/ApiController.ts';
 import type { ActionResult, FromBody, FromClient } from '../utils/ApiController.ts';
 
@@ -17,7 +18,7 @@ const cars = [
   { id: 5, make: 'Ford', model: 'Fusion' }
 ];
 
-export default class CarsController extends ApiController {
+export default class CarController extends ApiController {
   constructor() {
     super('api/cars', [requestLogger]);
     this
@@ -28,14 +29,18 @@ export default class CarsController extends ApiController {
       .delete('/:id', this.deleteCar, [isAuthorized], 'Delete a car');
   }
 
-  async getCars({ query }: FromClient<Car>) {
-    const make = query.make;
-    console.log('make', query);
-    const filteredCars = make ? cars.filter(car => car.make === make) : cars;
-    return Ok(filteredCars);
+  async getCars() {
+
+    const cars = await carsService.getCars();
+    // const make = query.make;
+    // console.log('make', query);
+    // const filteredCars = make ? cars.filter(car => car.make === make) : cars;
+
+    return Ok(cars);
   }
 
   async getCar({ params }: FromClient<any, { id: number }>): Promise<ActionResult<Car>> {
+
     const id = params.id;
     const car = cars.find(car => car.id == id);
     if (!car) {
@@ -44,7 +49,9 @@ export default class CarsController extends ApiController {
     return Ok(car);
   }
   getCarBids() {
+
     return Ok([{ id: 1, amount: 1000 }, { id: 2, amount: 2000 }]);
+
   }
 
   async createCar({ body }: FromBody<Car>) {
